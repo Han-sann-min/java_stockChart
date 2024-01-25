@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Chart</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      #chart-container {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-top: 20px;
+      }
+
+      label {
+        margin-right: 5px;
+      }
+
+      input {
+        padding: 5px;
+        margin-right: 10px;
+      }
+
+      button {
+        padding: 10px;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+    </style>
+     <script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawVisualization);
+
+    function drawVisualization() {
+      var yearInput = document.getElementById('yearInput');
+      var monthInput = document.getElementById('monthInput');
+      var chartTypeSelect = document.getElementById('chartTypeSelect');
+
+      var year = yearInput.value || '2016';
+      var month = monthInput.value || '2';
+
+      var selectedChartType = chartTypeSelect.value;
+      if (selectedChartType === 'line') {
+        drawLineChart(parseInt(year), parseInt(month));
+      } else if (selectedChartType === 'bar') {
+        drawBarChart(parseInt(year), parseInt(month));
+      } else if (selectedChartType === 'Candle') {
+        drawCandleChart(parseInt(year), parseInt(month));
+      }
+    }
+
+      function drawLineChart(year, month) {
+        fetch('./data/Tesla.json')
+          .then(response => response.json())
+          .then(jsonData => {
+            var data = new google.visualization.DataTable();
+            data.addColumn('date', 'Date');
+            data.addColumn('number', 'Open');
+            data.addColumn('number', 'High');
+            data.addColumn('number', 'Low');
+            data.addColumn('number', 'Close');
+
+            jsonData.forEach(item => {
+              var dateParts = item.Date.split('/');
+              var date = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
+              
+              if (
+                  date >= new Date(year , month - 1, "1") && 
+                  date < new Date(year , parseInt(month), "1")
+                  ) 
+              {
+                  var open = parseFloat(item.Open);
+                  var high = parseFloat(item.High);
+                  var low = parseFloat(item.Low);
+                  var close = parseFloat(item.Close);
+
+                  data.addRow([date, open, high, low, close]);
+              }
+            });
+
+            var options = {
+                title : '주식 데이터',
+                vAxis: {title: '값'},
+                hAxis: {title: '날짜'},
+                seriesType: 'line',
+                series: {
+                    0: {type: 'line', color: '#e2431e'}, // Open: 빨간색
+                    1: {type: 'line', color: '#f1ca3a'}, // High: 노란색
+                    2: {type: 'line', color: '#6f9654'}, // Low: 초록색
+                    3: {type: 'line', color: '#1c91c0'}, // Close: 파란색
+                }
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+            chart.draw(data, options);
+          })
+          .catch(error => {
+            console.log('파일을 가져오는 중 오류가 발생했습니다:', error);
+          });
+      }
+
+      function drawBarChart(year, month) {
+        // JSON 데이터 가져오기
+        fetch('./data/Tesla.json')
+            .then(response => response.json())
+            .then(jsonData => {
+                // 데이터 테이블 생성
+                var data = new google.visualization.DataTable();
+                data.addColumn('date', 'Date');
+                data.addColumn('number', 'Open');
+                data.addColumn('number', 'High');
+                data.addColumn('number', 'Low');
+                data.addColumn('number', 'Close');
+    
+                // 데이터 추가
+                jsonData.forEach(item => {
+                    var dateParts = item.Date.split('/');
+                    var date = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
+    
+                    // Filter data for the entire month of the given year
+                    if (
+                        date >= new Date(year , month - 1, "1") && 
+                        date < new Date(year , parseInt(month), "1")
+                        ) 
+                    {
+                        var open = parseFloat(item.Open);
+                        var high = parseFloat(item.High);
+                        var low = parseFloat(item.Low);
+                        var close = parseFloat(item.Close);
+    
+                        data.addRow([date, open, high, low, close]);
+                    }
+                });
+    
+                // 차트 옵션 설정
+                var options = {
+                    title: '주식 데이터',
+                    vAxis: { title: '값' },
+                    hAxis: { title: '날짜' },
+                    seriesType: 'bars',
+                    series: {
+                        0: { type: 'bars', color: '#e2431e' }, // Open: 빨간색
+                        1: { type: 'bars', color: '#f1ca3a' }, // High: 노란색
+                        2: { type: 'bars', color: '#6f9654' }, // Low: 초록색
+                        3: { type: 'bars', color: '#1c91c0' }, // Close: 파란색
+                        // 4: { type: 'bars', color: '#43459d' }, // Volume: 남색
+                        // 5: { type: 'line', color: '#8c6bb1' }  // Adj Close: 보라색
+                    }
+                };
+    
+                // 차트 그리기
+                var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
+                chart.draw(data, options);
+            })
+            .catch(error => {
+                console.log('파일을 가져오는 중 오류가 발생했습니다:', error);
+            });
+    
+        // Get the last day of the month
+        function getLastDayOfMonth(year, month) {
+            return new Date(year, month, 0).getDate();
+        }
+    }
+
+
+    function drawCandleChart(year, month) {
+      
+        // JSON 데이터 가져오기
+        fetch('./data/Tesla.json')
+          .then(response => response.json())
+          .then(jsonData => {
+            // 데이터 테이블 생성
+            var data = new google.visualization.DataTable();
+            data.addColumn('date', 'Date');
+            data.addColumn('number', 'Low');
+            data.addColumn('number', 'Open');
+            data.addColumn('number', 'Close');
+            data.addColumn('number', 'High');
+
+            // 데이터 추가
+            jsonData.forEach(item => {
+              var dateParts = item.Date.split('/');
+              var date = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
+              if (
+                  date >= new Date(year , month - 1, "1") && 
+                  date < new Date(year , parseInt(month), "1")
+                  ) 
+              {
+                  var low = parseFloat(item.Low);
+                  var open = parseFloat(item.Open);
+                  var close = parseFloat(item.Close);
+                  var high = parseFloat(item.High);
+
+                  data.addRow([date, low, open, close, high]);
+              }
+            });
+
+            // 차트 옵션 설정
+            var options = {
+                title : '주식 데이터',
+                vAxis: {title: '값'},
+                hAxis: {title: '날짜'},
+                legend: 'none',
+                series: {
+                    1:{color: 'black', visibleInLegend: false},
+                    3:{color: 'red', visibleInLegend: false}
+                  },
+                candlestick: {
+                    fallingColor: { strokeWidth: 0, fill: '#3366cc'}, // 음봉 색상
+                    risingColor: { strokeWidth: 0, fill: '#dc3912'}, // 양봉 색상
+                  }
+            };
+
+            // 차트 그리기
+            var chart = new google.visualization.CandlestickChart(document.getElementById('chart_div'));
+            chart.draw(data, options);
+          })
+          .catch(error => {
+            console.log('파일을 가져오는 중 오류가 발생했습니다:', error);
+          });
+    }
+    </script>
+  </head>
+  <body>
+    <h1>테슬라 주가 차트</h1>
+    <div id="chart-container">
+      <!-- input 요소로 년도와 월 입력 받기 -->
+      <label for="yearInput">년도:</label>
+      <input type="text" id="yearInput" value="2016">
+      <label for="monthInput">월:</label>
+      <input type="text" id="monthInput" value="2">
+      <label for="chartTypeSelect">차트 종류:</label>
+      <select id="chartTypeSelect">
+        <option value="line">Line</option>
+        <option value="bar">Bar</option>
+        <option value="Candle">Candle</option>
+      </select>
+      <button onclick="drawVisualization()">차트 다시 그리기</button>
+      <div id="chart_div" style="width: 900px; height: 500px;"></div>
+    </div> 
+    </div>
+  </body>
+</html>
